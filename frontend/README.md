@@ -1,107 +1,295 @@
-# News Generator UI
+# News Generator Frontend
 
-A dynamic Next.js replacement for the original static `ui.html` frontend.
+Next.js frontend interface for the News Generator text generation system.
 
-## What this version includes
+The app connects to a FastAPI backend, sends generation requests, displays generated text, and keeps conversations locally in the browser.
 
-- Uses Next.js App Router and TypeScript instead of one static HTML file.
-- Proxies frontend requests through `/api/*`, so the browser does not call `http://localhost:8000` directly.
-- Keeps the FastAPI base URL on the server with `FASTAPI_BASE_URL`.
-- Adds model preload, health polling, request cancellation, prompt examples, copy actions, persisted settings, responsive layout, and clearer error handling.
-- Adds saved conversations, so different text generation threads can be reopened and continued later.
-- Adds dynamic conversation URLs with `/conversations/[conversationId]`.
-- Mirrors the FastAPI validation limits from `server.py`: prompt length, token range, temperature range, top-k range, and repetition penalty range.
+---
 
-## Required backend
+## Features
 
-Keep your existing FastAPI server running:
+* Text generation interface
+* Multiple conversations
+* Local conversation history
+* Continue generation from a previous result
+* Adjustable generation controls
+* Preset parameter modes
+* Backend health status
+* Backend sync / preload action
+* Result metrics
+* Copy generated text
+* Copy only the generated continuation
+* Rerun previous prompts
+* Delete generated results
+* Rename conversations
+* Delete conversations
+* Responsive layout
 
-```bash
-python server.py
+---
+
+## Tech Stack
+
+* Next.js
+* React
+* TypeScript
+* CSS Modules / global CSS
+* Browser local storage
+* FastAPI backend proxy routes
+
+---
+
+## Project Structure
+
+```text
+frontend/
+├── app/
+│   ├── api/
+│   │   ├── generate/
+│   │   ├── health/
+│   │   └── load/
+│   ├── conversations/
+│   │   └── [conversationId]/
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+├── lib/
+├── types/
+├── package.json
+├── package-lock.json
+├── next.config.ts
+├── tsconfig.json
+├── eslint.config.mjs
+├── next-env.d.ts
+├── .env.example
+└── README.md
 ```
 
-By default, the Next.js app expects the backend at:
+---
+
+## Requirements
+
+Use a stable Node.js version.
+
+Recommended:
 
 ```bash
-http://localhost:8000
+node -v
 ```
 
-To change it, create `.env.local`:
+Expected:
+
+```text
+Node.js 22.x or newer stable LTS version
+```
+
+Install dependencies with:
+
+```bash
+npm install
+```
+
+---
+
+## Environment Variables
+
+Create a local environment file:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Then edit:
+Set the FastAPI backend URL:
 
-```bash
+```env
 FASTAPI_BASE_URL=http://localhost:8000
 ```
 
-## Run the Next.js app
+The frontend calls its own internal API routes, and those routes forward requests to the backend.
+
+---
+
+## Running the Frontend
+
+Start the development server:
 
 ```bash
-npm install
 npm run dev
 ```
 
-Open:
+Open the app:
 
-```bash
+```text
 http://localhost:3000
 ```
 
-## Production build
+---
+
+## Backend Connection
+
+The frontend expects the backend to be running at the URL configured in:
+
+```env
+FASTAPI_BASE_URL
+```
+
+Default backend URL:
+
+```text
+http://localhost:8000
+```
+
+The backend should expose:
+
+```text
+GET  /health
+POST /load
+POST /generate
+```
+
+The frontend uses local proxy routes:
+
+```text
+/api/health
+/api/load
+/api/generate
+```
+
+---
+
+## Available Scripts
+
+### Development
+
+```bash
+npm run dev
+```
+
+Starts the Next.js development server.
+
+### Production Build
 
 ```bash
 npm run build
+```
+
+Creates a production build.
+
+### Production Start
+
+```bash
 npm run start
 ```
 
-## File structure
+Runs the production build.
 
-```txt
-app/
-  api/
-    generate/route.ts              # validates and proxies POST /generate to FastAPI
-    health/route.ts                # proxies GET /health
-    load/route.ts                  # proxies POST /load
-  conversations/[conversationId]/  # dynamic conversation route
-  globals.css
-  layout.tsx
-  page.tsx
-components/
-  GeneratorClient.tsx              # main interactive client component
-  Sidebar.tsx                      # conversations, parameters, presets, backend/model info
-  OutputCard.tsx                   # generated result cards
-  RangeControl.tsx                 # reusable slider control
-  EmptyState.tsx
-  ErrorCard.tsx
-  LoadingCard.tsx
-  StatusPill.tsx
-lib/
-  api.ts                           # browser-facing API client
-  presets.ts                       # generation presets and prompt examples
-  server.ts                        # server-side proxy helpers and validation
-  text.ts                          # text splitting and formatting helpers
-types/
-  generation.ts                    # shared TypeScript API types
+### Lint
+
+```bash
+npm run lint
 ```
 
-## Local storage
+Runs linting checks.
 
-The app stores conversations in browser local storage under:
+---
 
-```txt
-stai-next-ui-state-v3
+## Conversations
+
+The app supports multiple conversations.
+
+Each conversation contains:
+
+* title
+* prompt
+* selected generation parameters
+* generated results
+* timestamps
+* result metrics
+
+Conversation data is stored locally in the browser.
+
+No database is required for the current version.
+
+---
+
+## Generation Controls
+
+The sidebar contains the main generation controls.
+
+### Max New Tokens
+
+Controls how many tokens the model can generate after the prompt.
+
+### Temperature
+
+Controls output variation.
+
+Lower values make the output more predictable. Higher values allow more variation.
+
+### Top-K
+
+Limits sampling to the most likely next-token candidates.
+
+### Repetition Penalty
+
+Discourages repeated phrasing.
+
+A value of `1.0` turns this off.
+
+---
+
+## Presets
+
+The app includes parameter presets:
+
+```text
+Creative
+Balanced
+Focused
+Conservative
 ```
 
-It also imports data from the previous key if present:
+Selecting a preset updates the generation controls.
 
-```txt
-stai-next-ui-state-v2
+---
+
+## Result Actions
+
+Each generated result supports:
+
+* copy full text
+* copy continuation
+* continue from this result
+* rerun
+* delete
+
+Result details are available inside the result card.
+
+---
+
+## Local Storage
+
+The app stores conversations in browser local storage.
+
+This allows conversations to remain available after refreshing or reopening the page.
+
+Clearing browser storage for `localhost:3000` will remove saved conversations.
+
+---
+
+
+## Setup Summary
+
+From the `frontend` folder:
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
 ```
 
-## Notes
+Then open:
 
-The current FastAPI backend returns the completed text in one response. This UI therefore shows request-level progress, not true token streaming. To support real streaming, add a streaming endpoint to FastAPI, such as Server-Sent Events or a chunked response, then update the Next.js `/api/generate` route and client to consume that stream.
+```text
+http://localhost:3000
+```
